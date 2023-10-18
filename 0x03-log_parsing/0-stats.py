@@ -1,43 +1,48 @@
 #!/usr/bin/python3
-"""A script that reads stdin line by line and computes metrics"""
-
+"""
+Python script takes URL from stdin and compute exact metrics
+"""
 import sys
+import traceback
 
 
 if __name__ == "__main__":
 
-    status_code = {"200": 0, "301": 0, "400": 0, "401": 0,
-                   "403": 0, "404": 0, "405": 0, "500": 0}
+    codes = ["200", "301", "400", "401", "403", "404", "405", "500"]
+    file_list = []
+    stat_dict = {}
     file_size = 0
-    total_lines = 0
+    line_num = 0
 
-    def print_values(status_code, file_size):
-        print("File size: {:d}".format(file_size))
-        for key in sorted(status_code.keys()):
-            if status_code[key] != 0:
-                print("{}: {:d}".format(key, status_code[key]))
-
+    for stat in codes:
+        stat_dict[stat] = 0
     try:
         for line in sys.stdin:
-            if total_lines != 0 and total_lines % 10 == 0:
-                print_values(status_code, file_size)
-
-            total_lines += 1
-            ln = line.split()
-
             try:
-                file_size += int(ln[-1])
+                file_list = line.split(" ")
+                flist_length = len(file_list)
+                if flist_length != 9:
+                    pass
+                if file_list[-2] in codes:
+                    stat_dict[file_list[-2]] += 1
+                if file_list[-1][-1] == '\n':
+                    file_list[-1][:-1]
+                file_size += int(file_list[-1])
             except:
                 pass
-
-            try:
-                if ln[-2] in status_code:
-                    status_code[ln[-2]] += 1
-            except:
-                pass
-
-        print_values(status_code, file_size)
-
-    except KeyboardInterrupt:
-        print_values(status_code, file_size)
+            line_num += 1
+            if line_num % 10 == 0:
+                print("File size: {}".format(file_size))
+                for stat in sorted(stat_dict.keys()):
+                    if stat_dict[stat] != 0:
+                        print("{}: {}".format(stat, stat_dict[stat]))
+        print("File size: {}".format(file_size))
+        for stat in sorted(stat_dict.keys()):
+            if stat_dict[stat] != 0:
+                print("{}: {}".format(stat, stat_dict[stat]))
+    except KeyboardInterrupt as error:
+        print("File size: {}".format(file_size))
+        for stat in sorted(stat_dict.keys()):
+            if stat_dict[stat] != 0:
+                print("{}: {}".format(stat, stat_dict[stat]))
         raise
