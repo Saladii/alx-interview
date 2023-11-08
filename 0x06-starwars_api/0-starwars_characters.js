@@ -1,24 +1,53 @@
 #!/usr/bin/node
 
 const request = require('request');
-const dict = [];
-let i = 0;
-request('https://swapi-api.hbtn.io/api/films/' + process.argv[2], (ferr, fresponse, fbody) => {
-  if (ferr) return console.log(ferr);
-  for (const chr of JSON.parse(fbody).characters) {
-    request(chr, (cerr, cresponse, cbody) => {
-      if (cerr) return console.log(cerr);
-      const character = JSON.parse(cbody);
-      const words = chr.split('/');
-      const id = words[5];
-      if (!dict[id]) {
-        dict[id] = [];
-      }
-      dict[id].push(character.name);
-      if (i === JSON.parse(fbody).characters.length - 1) {
-        for (const ele of dict) if (ele) console.log(ele[0]);
-      }
-      i++;
-    });
+
+const movieId = process.argv[2];
+const filmEndPoint = 'https://swapi-api.hbtn.io/api/films/' + movieId;
+let people = [];
+const names = [];
+
+const requestCharacters = async () => {
+  await new Promise(resolve => request(filmEndPoint, (err, res, body) => {
+    if (err || res.statusCode !== 200) {
+      console.error('Error: ', err, '| StatusCode: ', res.statusCode);
+    } else {
+      const jsonBody = JSON.parse(body);
+      people = jsonBody.characters;
+      resolve();
+    }
+  }));
+};
+
+const requestNames = async () => {
+  if (people.length > 0) {
+    for (const p of people) {
+      await new Promise(resolve => request(p, (err, res, body) => {
+        if (err || res.statusCode !== 200) {
+          console.error('Error: ', err, '| StatusCode: ', res.statusCode);
+        } else {
+          const jsonBody = JSON.parse(body);
+          names.push(jsonBody.name);
+          resolve();
+        }
+      }));
+    }
+  } else {
+    console.error('Error: Got no Characters for some reason');
   }
-});
+};
+
+const getCharNames = async () => {
+  await requestCharacters();
+  await requestNames();
+
+  for (const n of names) {
+    if (n === names[names.length - 1]) {
+      process.stdout.write(n);
+    } else {
+      process.stdout.write(n + '\n');
+    }
+  }
+};
+
+getCharNames();
